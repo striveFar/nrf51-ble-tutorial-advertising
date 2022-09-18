@@ -82,7 +82,7 @@
 #include "nrf_log_default_backends.h"
 
 
-#define DEVICE_NAME                     "HelloWorld"                       /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "HELLOMMMMMMMMMM"                       /**< Name of device. Will be included in the advertising data. */
 #define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
 
 #define APP_ADV_DURATION                18000                                   /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
@@ -274,8 +274,8 @@ static void gap_params_init(void)
     APP_ERROR_CHECK(err_code);
 
 
-       /*err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
-       APP_ERROR_CHECK(err_code); */
+    err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_HID_KEYBOARD);
+    APP_ERROR_CHECK(err_code);
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
 
@@ -285,6 +285,14 @@ static void gap_params_init(void)
     gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
+    APP_ERROR_CHECK(err_code);
+
+    ble_gap_privacy_params_t prvt_conf;
+    memset(&prvt_conf, 0, sizeof(prvt_conf));
+    prvt_conf.privacy_mode = BLE_GAP_PRIVACY_MODE_DEVICE_PRIVACY;
+    prvt_conf.private_addr_type = BLE_GAP_ADDR_TYPE_RANDOM_PRIVATE_RESOLVABLE;
+    prvt_conf.private_addr_cycle_s = 0;
+    err_code = sd_ble_gap_privacy_set(&prvt_conf);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -616,7 +624,27 @@ static void advertising_init(void)
 
     memset(&init, 0, sizeof(init));
 
-    init.advdata.name_type               = BLE_ADVDATA_FULL_NAME;
+    ble_advdata_manuf_data_t                  manuf_data; //Variable to hold manufacturer specific data
+    uint8_t data[]                            = "UU"; //Our data to advertise
+    manuf_data.company_identifier             =  0xFFFF; //For internal and interoperability tests ID 2 byte
+    manuf_data.data.p_data                    = data;
+    manuf_data.data.size                      = sizeof(data);
+    init.advdata.p_manuf_specific_data = &manuf_data;
+
+
+    ble_advdata_manuf_data_t                  manuf_data_response; //Scan response data
+    uint8_t data_sr[]                            = "!!!!!!!!!!!!!!!!!!!!!!!!!!"; //Our data to advertise
+    manuf_data_response.company_identifier             =  0x0059; //For internal and interoperability tests ID 2 byte
+    init.srdata.name_type = BLE_ADVDATA_NO_NAME;
+    manuf_data_response.data.p_data                    = data_sr;
+    manuf_data_response.data.size                      = sizeof(data_sr);
+    init.srdata.p_manuf_specific_data = &manuf_data_response;
+
+    int8_t tx_power_level		      = -20;
+    init.advdata.p_tx_power_level          = &tx_power_level;// 1 byte
+
+    init.advdata.name_type               = BLE_ADVDATA_SHORT_NAME;// enum 4 byte
+    init.advdata.short_name_len = 8; // Advertise only first 6 letters of name
     init.advdata.include_appearance      = true;
     init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
     init.advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
